@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.log
+*.zip
+*.bak
+.vscode/
+*.kicad_pcb-bak
+*.sch-bak
+.env
+*.DS_Store
