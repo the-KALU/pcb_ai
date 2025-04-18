@@ -1,0 +1,489 @@
+{
+  "nodes": [
+    {
+      "id": "n0",
+      "type": "inductor",
+      "features": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0.0286,
+        0.43810000000000004
+      ],
+      "target": [
+        0.1085,
+        0.46799999999999997
+      ],
+      "net": "SIGNAL2"
+    },
+    {
+      "id": "n1",
+      "type": "diode",
+      "features": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0.0791,
+        0.11699999999999999
+      ],
+      "target": [
+        0.061200000000000004,
+        0.1506
+      ],
+      "net": "SIGNAL1"
+    },
+    {
+      "id": "n2",
+      "type": "diode",
+      "features": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0.7598,
+        0.7757999999999999
+      ],
+      "target": [
+        0.7206999999999999,
+        0.8116
+      ],
+      "net": "VCC"
+    },
+    {
+      "id": "n3",
+      "type": "inductor",
+      "features": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0.0681,
+        0.8225
+      ],
+      "target": [
+        0.0404,
+        0.7807
+      ],
+      "net": "SIGNAL1"
+    },
+    {
+      "id": "n4",
+      "type": "capacitor",
+      "features": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.7005,
+        0.9395
+      ],
+      "target": [
+        0.6322,
+        0.8637999999999999
+      ],
+      "net": "SIGNAL1"
+    },
+    {
+      "id": "n5",
+      "type": "transistor",
+      "features": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0.4721,
+        0.2594
+      ],
+      "target": [
+        0.3911,
+        0.1813
+      ],
+      "net": "SIGNAL2"
+    },
+    {
+      "id": "n6",
+      "type": "inductor",
+      "features": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0.32520000000000004,
+        0.4238
+      ],
+      "target": [
+        0.2766,
+        0.5168
+      ],
+      "net": "SIGNAL2"
+    },
+    {
+      "id": "n7",
+      "type": "resistor",
+      "features": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0.8740000000000001,
+        0.7262000000000001
+      ],
+      "target": [
+        0.9146,
+        0.8078
+      ],
+      "net": "SIGNAL2"
+    },
+    {
+      "id": "n8",
+      "type": "diode",
+      "features": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0.6523,
+        0.42060000000000003
+      ],
+      "target": [
+        0.6618999999999999,
+        0.3385
+      ],
+      "net": "SIGNAL1"
+    },
+    {
+      "id": "n9",
+      "type": "LED",
+      "features": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.8648,
+        0.3712
+      ],
+      "target": [
+        0.8123,
+        0.4403
+      ],
+      "net": "SIGNAL2"
+    },
+    {
+      "id": "n10",
+      "type": "LED",
+      "features": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0.8742,
+        0.2335
+      ],
+      "target": [
+        0.9129999999999999,
+        0.1514
+      ],
+      "net": "SIGNAL2"
+    }
+  ],
+  "edges": [
+    {
+      "source": "n3",
+      "target": "n1",
+      "features": [
+        0.95,
+        1
+      ]
+    },
+    {
+      "source": "n4",
+      "target": "n1",
+      "features": [
+        0.3,
+        1
+      ]
+    },
+    {
+      "source": "n7",
+      "target": "n4",
+      "features": [
+        0.49,
+        2
+      ]
+    },
+    {
+      "source": "n6",
+      "target": "n9",
+      "features": [
+        0.36,
+        0
+      ]
+    },
+    {
+      "source": "n10",
+      "target": "n0",
+      "features": [
+        0.99,
+        1
+      ]
+    },
+    {
+      "source": "n8",
+      "target": "n2",
+      "features": [
+        0.83,
+        2
+      ]
+    },
+    {
+      "source": "n8",
+      "target": "n2",
+      "features": [
+        0.85,
+        1
+      ]
+    },
+    {
+      "source": "n1",
+      "target": "n10",
+      "features": [
+        0.55,
+        1
+      ]
+    },
+    {
+      "source": "n1",
+      "target": "n4",
+      "features": [
+        0.96,
+        0
+      ]
+    },
+    {
+      "source": "n10",
+      "target": "n5",
+      "features": [
+        0.78,
+        2
+      ]
+    },
+    {
+      "source": "n7",
+      "target": "n4",
+      "features": [
+        0.78,
+        0
+      ]
+    },
+    {
+      "source": "n0",
+      "target": "n8",
+      "features": [
+        0.18,
+        0
+      ]
+    },
+    {
+      "source": "n8",
+      "target": "n5",
+      "features": [
+        0.82,
+        0
+      ]
+    },
+    {
+      "source": "n5",
+      "target": "n1",
+      "features": [
+        0.65,
+        0
+      ]
+    },
+    {
+      "source": "n9",
+      "target": "n10",
+      "features": [
+        0.69,
+        0
+      ]
+    },
+    {
+      "source": "n6",
+      "target": "n8",
+      "features": [
+        0.74,
+        1
+      ]
+    },
+    {
+      "source": "n2",
+      "target": "n4",
+      "features": [
+        0.73,
+        2
+      ]
+    },
+    {
+      "source": "n7",
+      "target": "n1",
+      "features": [
+        0.34,
+        0
+      ]
+    },
+    {
+      "source": "n5",
+      "target": "n10",
+      "features": [
+        0.49,
+        2
+      ]
+    },
+    {
+      "source": "n5",
+      "target": "n4",
+      "features": [
+        0.41,
+        0
+      ]
+    },
+    {
+      "source": "n5",
+      "target": "n6",
+      "features": [
+        0.4,
+        2
+      ]
+    },
+    {
+      "source": "n7",
+      "target": "n1",
+      "features": [
+        0.51,
+        2
+      ]
+    },
+    {
+      "source": "n9",
+      "target": "n6",
+      "features": [
+        0.23,
+        1
+      ]
+    },
+    {
+      "source": "n1",
+      "target": "n9",
+      "features": [
+        0.44,
+        2
+      ]
+    },
+    {
+      "source": "n8",
+      "target": "n9",
+      "features": [
+        0.44,
+        2
+      ]
+    },
+    {
+      "source": "n5",
+      "target": "n1",
+      "features": [
+        0.22,
+        1
+      ]
+    },
+    {
+      "source": "n10",
+      "target": "n1",
+      "features": [
+        0.49,
+        2
+      ]
+    },
+    {
+      "source": "n0",
+      "target": "n3",
+      "features": [
+        0.32,
+        2
+      ]
+    },
+    {
+      "source": "n4",
+      "target": "n8",
+      "features": [
+        1.0,
+        2
+      ]
+    },
+    {
+      "source": "n3",
+      "target": "n1",
+      "features": [
+        0.18,
+        2
+      ]
+    },
+    {
+      "source": "n3",
+      "target": "n7",
+      "features": [
+        0.21,
+        2
+      ]
+    },
+    {
+      "source": "n5",
+      "target": "n3",
+      "features": [
+        0.97,
+        1
+      ]
+    }
+  ],
+  "metadata": {
+    "graph_id": "pcb_graph_14",
+    "uuid": "f234567d-839a-4bec-9ec6-5906ea979d6d",
+    "timestamp": "2025-04-14 17:54:38.474853",
+    "num_nodes": 11,
+    "num_edges": 32
+  }
+}
