@@ -1,63 +1,68 @@
-# rl/policy.py
-import numpy as np
 import torch
 import torch.nn as nn
 from torch_geometric.nn import GCNConv
-from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
-from stable_baselines3.common.policies import ActorCriticPolicy
-from gym.spaces import Box
+import torch.nn.functional as F
 
+class GNNPolicy(torch.nn.Module):
+    def __init__(self, observation_space, action_space, gnn_weights_path, edge_index, net_arch):
+        super(GNNPolicy, self).__init__()
+        self.fixed_obs_size = observation_space.shape[1] # 128
+        in_channels = 128
+        print(f"GNNPolicy initialized with in_channels for GCN: {in_channels}") # Debug
+        hidden_channels = net_arch[0]
+        out_channels_gnn = net_arch[-1]
+        self.gnn = GCNNetwork(in_channels, hidden_channels, out_channels_gnn, gnn_weights_path, edge_index)
+        self.fc1_actor = nn.Linear(out_channels_gnn, net_arch[1])
+        self.fc2_actor = nn.Linear(net_arch[1], action_space.shape[0])
 
-class GNNPolicyExtractor(BaseFeaturesExtractor):
-    def __init__(self, observation_space, gnn_weights_path="gnn_weights.pth"):
-        super().__init__(observation_space, features_dim=64)
-        self.features_per_node = 9  # Set this to match gnn_train.py
-        self.conv1 = GCNConv(self.features_per_node, 64)
-        self.conv2 = GCNConv(64, 64)
-        self.relu = nn.ReLU()
+        self.fc1_critic = nn.Linear(out_channels_gnn, net_arch[1])
+        self.fc2_critic = nn.Linear(net_arch[1], 1)
 
-        # Load pretrained weights (trained on 9 features per node)
-        state_dict = torch.load(gnn_weights_path, map_location="cpu")
-        self.load_state_dict(state_dict, strict=False)
+    def act(self, obs, edge_index):
+        print(f"GNNPolicy act input obs shape: {obs.shape}") # Debug
+        action_mean, value = self.forward(obs, edge_index)
+        action = torch.clamp(torch.normal(action_mean, 0.1), 0.0, 1.0)
+        return action, value
 
-    def forward(self, observations):
-        if isinstance(observations, np.ndarray):
-            observations = torch.tensor(observations, dtype=torch.float32)
+    def forward(self, obs, edge_index, num_nodes=None):
+        num_nodes_graph = edge_index.max().item() + 1
+        graph_obs = obs[:, :num_nodes_graph, :] # Shape: (1, num_nodes_graph, 128)
+        x = graph_obs.squeeze(0) # Shape: (num_nodes_graph, 128)
+        print(f"GNNPolicy forward input x shape to GNN: {x.shape}") # Debug
+        features = self.gnn(x, edge_index, num_nodes=num_nodes_graph)
+        actor_values = F.relu(self.fc1_actor(features))
+        action_means = torch.softmax(self.fc2_actor(actor_values), dim=-1)
+        critic_values = F.relu(self.fc1_critic(features))
+        state_values = self.fc2_critic(critic_values).squeeze(-1)
+        return action_means, state_values
+    
 
-        batch_size = observations.shape[0]
-        total_features = observations.shape[1]
+    def _build_mlp(self, input_dim, output_dim, net_arch):
+            layers = []
+            prev_dim = input_dim
+            for size in net_arch:
+                layers.append(nn.Linear(prev_dim, size))
+                layers.append(nn.Tanh())
+                prev_dim = size
+            layers.append(nn.Linear(prev_dim, output_dim))
+            return nn.Sequential(*layers)
 
-        num_nodes = total_features // self.features_per_node
-        x = observations.view(batch_size, num_nodes, self.features_per_node).squeeze(0)
-        edge_index = self._mock_edge_index(num_nodes)
+class GCNNetwork(torch.nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, gnn_weights_path, edge_index):
+        super(GCNNetwork, self).__init__()
+        print(f"GCNNetwork initialized with in_channels: {in_channels}") # Debug
+        self.conv1 = GCNConv(in_channels, hidden_channels, bias=True)
+        self.conv2 = GCNConv(hidden_channels, out_channels, bias=True)
+        self.lin = nn.Linear(out_channels, 2)
+        # self.load_state_dict(torch.load(gnn_weights_path)) # Removed
 
-        x = self.relu(self.conv1(x, edge_index))
-        x = self.relu(self.conv2(x, edge_index))
-
-        return x.mean(dim=0, keepdim=True)  # Return global mean pooled embedding
-
-    def _mock_edge_index(self, num_nodes):
-        row, col = [], []
-        for i in range(num_nodes):
-            for j in range(num_nodes):
-                if i != j:
-                    row.append(i)
-                    col.append(j)
-        return torch.tensor([row, col], dtype=torch.long)
-
-
-class CustomGNNPolicy(ActorCriticPolicy):
-    def __init__(self, observation_space: Box, action_space: Box, lr_schedule, gnn_weights_path=None, freeze_gnn=False, **kwargs):
-        input_dim = observation_space.shape[0]  # Flattened feature vector length
-        super().__init__(
-            observation_space,
-            action_space,
-            lr_schedule,
-            features_extractor_class=GNNPolicyExtractor,
-            features_extractor_kwargs=dict(
-                input_dim=input_dim,
-                gnn_weights_path=gnn_weights_path,
-                freeze_gnn=freeze_gnn
-            ),
-            **kwargs,
-        )
+    def forward(self, x, edge_index, num_nodes=None):
+        print(f"GCNNetwork forward input shape (x): {x.shape}") # Debug
+        x = self.conv1(x, edge_index)
+        print(f"GCNNetwork forward after conv1 shape (x): {x.shape}") # Debug
+        x = F.relu(x)
+        x = self.conv2(x, edge_index)
+        print(f"GCNNetwork forward after conv2 shape (x): {x.shape}") # Debug
+        x = F.relu(x)
+        x = self.lin(x)
+        return x

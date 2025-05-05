@@ -1,60 +1,65 @@
 import os
 import torch
-import json
-from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import CheckpointCallback
-from stable_baselines3.common.env_checker import check_env
-from stable_baselines3.common.vec_env import DummyVecEnv
-from rl.pcb_env import PcbEnv
-from rl.policy import CustomGNNPolicy
+import torch.nn as nn
+import numpy as np
+import torch.optim as optim
+from torch.utils.data import DataLoader, TensorDataset
+from gymnasium import spaces
+from rl.gnn_extractor import GNNPolicyExtractor
+from rl.pcb_env import load_graphs_from_folder
 
+# === Config ===
+GRAPH_DIR = "extracted_graphs"
+OUTPUT_PATH = "models/pretrained_gnn.pth"
+FEATURE_DIM = 180     # Input dim (raw node features)
+EXTRACTED_DIM = 64    # Output feature dim to match CustomGNNPolicy
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+BATCH_SIZE = 64
+EPOCHS = 50
+LR = 1e-3
 
-# === 📁 Configurations ===
-GRAPH_DIR = "synthetic_graphs"
-LOG_DIR = "logs/ppo_run"
-MODEL_DIR = "models"
-GNN_WEIGHTS_PATH = "gnn_weights.pth"
-TOTAL_TIMESTEPS = 50000
+# === Load all node features ===
+graphs = load_graphs_from_folder(GRAPH_DIR)
+all_features = []
 
-# === 📏 Infer max observation dimension ===
-graph_files = [os.path.join(GRAPH_DIR, f) for f in os.listdir(GRAPH_DIR) if f.endswith(".json")]
-max_obs_dim = 0
-for file in graph_files:
-    with open(file, 'r') as f:
-        data = json.load(f)
-        obs = sum(len(n["features"]) for n in data["nodes"])
-        max_obs_dim = max(max_obs_dim, obs)
-print(f"\U0001F4CF Max observation dimension across graphs: {max_obs_dim}")
+for graph in graphs.values():
+    for node in graph["nodes"]:
+        f = node["features"]
+        if len(f) == FEATURE_DIM:
+            all_features.append(f)
 
-# === ♻️ Environment wrapper ===
-def make_env():
-    return PcbEnv(graph_dir=GRAPH_DIR, fixed_obs_size=max_obs_dim)
+all_features = torch.tensor(all_features, dtype=torch.float32)
+print(f"✨ Total nodes loaded: {len(all_features)} | Feature dim: {FEATURE_DIM}")
 
-env = DummyVecEnv([make_env])
+# === Dummy target: identity (self-supervised pretraining) ===
+targets = all_features.clone()
 
-# ✅ Sanity check
-check_env(make_env(), warn=True)
+dataset = TensorDataset(all_features, targets)
+dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
-# === ♻️ PPO Model with pretrained GNN ===
-policy_kwargs = {
-    "gnn_weights_path": GNN_WEIGHTS_PATH
-}
+# === Instantiate GNN Extractor ===
+obs_space = spaces.Box(low=0.0, high=1.0, shape=(FEATURE_DIM,), dtype=np.float32)
+model = GNNPolicyExtractor(observation_space=obs_space, feature_dim=EXTRACTED_DIM).to(DEVICE)
 
-model = PPO(
-    policy=CustomGNNPolicy,
-    env=env,
-    verbose=1,
-    tensorboard_log=LOG_DIR,
-    policy_kwargs=policy_kwargs,
-    device="cpu"
-)
+criterion = nn.MSELoss()
+optimizer = optim.Adam(model.parameters(), lr=LR)
 
-# === 💾 Checkpoint callback ===
-checkpoint_callback = CheckpointCallback(save_freq=5000, save_path=MODEL_DIR, name_prefix="ppo_gnn")
+# === Training Loop ===
+model.train()
+for epoch in range(EPOCHS):
+    total_loss = 0.0
+    for x_batch, y_batch in dataloader:
+        x_batch, y_batch = x_batch.to(DEVICE), y_batch.to(DEVICE)
+        optimizer.zero_grad()
+        output = model(x_batch)  # forward() does GCN + ReLU
+        loss = criterion(output, y_batch)
+        loss.backward()
+        optimizer.step()
+        total_loss += loss.item()
 
-# === 🚀 Train ===
-model.learn(total_timesteps=TOTAL_TIMESTEPS, callback=checkpoint_callback)
+    print(f"📚 Epoch {epoch+1}/{EPOCHS} | Loss: {total_loss:.4f}")
 
-# === ✅ Save final model ===
-model.save(os.path.join(MODEL_DIR, "ppo_gnn_final"))
-print("\n✅ PPO training complete and model saved.")
+# === Save pretrained GNN ===
+os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+torch.save(model.state_dict(), OUTPUT_PATH)
+print(f"✅ GNN saved to {OUTPUT_PATH}")
